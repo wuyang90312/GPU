@@ -1,0 +1,32 @@
+1. Number of Instructions:
+    ug53:~/Desktop/HW2% /usr/local/cuda-7.0/bin/nvprof --metrics inst_executed ./output
+    ==27125== NVPROF is profiling process 27125, command: ./output
+    N: 32M  GPUmax: 199999999  CPUmax: 199999999  GPUtime: 0.008327  CPUtime: 0.069857  SpeedUp: 8.389342   GPUmin: 3  CPUmin: 3  GPUtime: 0.007987  CPUtime: 0.069858  SpeedUp: 8.746672
+    ==27125== Profiling application: ./output
+    ==27125== Profiling result:
+    ==27125== Metric result:
+    Invocations                               Metric Name                        Metric Description         Min         Max         Avg
+    Device "GeForce GTX 980 (0)"
+            Kernel: GPU_MIN(int*)
+             30                             inst_executed                     Instructions Executed          89    46989312    15678429
+            Kernel: GPU_MAX(int*)
+             30                             inst_executed                     Instructions Executed          89    46989312    15678429
+
+
+2. Number of Global Memory Transaction:
+ug53:~/Desktop/HW2% /usr/local/cuda-7.0/bin/nvprof --metrics gld_transactions ./output
+==27157== NVPROF is profiling process 27157, command: ./output
+    N: 32M  GPUmax: 199999997  CPUmax: 199999997  GPUtime: 0.005776  CPUtime: 0.069701  SpeedUp: 12.067410   GPUmin: 4  CPUmin: 4  GPUtime: 0.005601  CPUtime: 0.070977  SpeedUp: 12.672322
+    ==27157== Profiling application: ./output
+    ==27157== Profiling result:
+    ==27157== Metric result:
+    Invocations                               Metric Name                        Metric Description         Min         Max         Avg
+    Device "GeForce GTX 980 (0)"
+            Kernel: GPU_MIN(int*)
+             30                          gld_transactions                  Global Load Transactions           8     8388608     2798936
+            Kernel: GPU_MAX(int*)
+             30                          gld_transactions                  Global Load Transactions           8     8388608     2798936
+
+
+3. Conclusion:
+    N 32M inst_executed: 15.7M gld_transactions: 2.8M

@@ -1,0 +1,84 @@
+1. Compile the program:
+/usr/local/cuda-7.0/bin/nvcc -g -G -arch=sm_30 -o computeHash computeHash.cu
+
+
+2. Run program under the cuda-gdb:
+/usr/local/cuda-7.0/bin/cuda-gdb ./computeHash
+
+
+(3.1 Actually, "run input2.bin" can work properly)
+
+
+3. Exception occurs:
+Starting program: /nfs/ug/homes-4/w/wuyang7/Desktop/HW2/HW2_submit/./computeHash input1.bin
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+Allocating 5MB for the input file.
+[New Thread 0x7ffff576c700 (LWP 25973)]
+
+CUDA Exception: Warp Misaligned Address
+The exception was triggered at PC 0x9ffb78 (computeHash.cu:22)
+
+Program received signal CUDA_EXCEPTION_6, Warp Misaligned Address.
+[Switching focus to CUDA kernel 1, grid 2, block (0,0,0), thread (64,0,0), device 0, sm 0, warp 2, lane 0]
+0x00000000009ffb88 in hashKernel<<<(8,1,1),(512,1,1)>>> (size=6220856, input=0x704c00000 "BM8\354^", indices=0x704b00000, 
+    hashOutput=0x704b04000) at computeHash.cu:22
+22                      int arrayValue = *((int*) (input + i));
+(cuda-gdb)
+
+
+4. Check for the location of exceptions:
+    4.1. Jump to block 0 and thread 0, and print the value of i (the value 0 is the multiple of 4):
+        (cuda-gdb) cuda thread 0 block 0
+        [Switching focus to CUDA kernel 1, grid 2, block (0,0,0), thread (0,0,0), device 0, sm 0, warp 0, lane 0]
+        0x00000000009ffb88      22                      int arrayValue = *((int*) (input + i));
+        (cuda-gdb) print i
+        $1 = 0
+
+
+    4.2. Move to block 0 and thread 1, and print the value of i (the value 1519 is not divisible by 4, find the exception location):
+        (cuda-gdb) cuda thread 1 block 0
+        [Switching focus to CUDA kernel 1, grid 2, block (0,0,0), thread (1,0,0), device 0, sm 0, warp 0, lane 1]
+        0x00000000009ffb88      22                      int arrayValue = *((int*) (input + i));
+        (cuda-gdb) print i
+        $2 = 1519
+
+
+The step 4 has shown that we find that the value of i is 1519, which is not dividable by 4. Thus, the thread 1 in block 0 is problematic.
+
+
+5. Solution:
+The value is defined by the variable "inputChunkSize" (in line 70). 
+In order to make it divisible by 4, we should remove the residue when the varaible is divided by 4:
+inputChunkSize -= (inputChunkSize%4);
+
+
+6. Verification:
+    6.1 For input1.bin
+        (cuda-gdb) run input1.bin 
+        Starting program: /nfs/ug/homes-4/w/wuyang7/Desktop/HW2/HW2_submit/./computeHash input1.bin
+        [Thread debugging using libthread_db enabled]
+        Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+        Allocating 5MB for the input file.
+        [New Thread 0x7ffff576c700 (LWP 26617)]
+
+        Kernel elapsed time:            0.6ms
+        Final hash value: 529608312
+        [Thread 0x7ffff576c700 (LWP 26617) exited]
+        [Inferior 1 (process 26607) exited normally]
+
+    6.2 For input2.bin:
+        (cuda-gdb) run input2.bin 
+        Starting program: /nfs/ug/homes-4/w/wuyang7/Desktop/HW2/HW2_submit/./computeHash input2.bin
+        [Thread debugging using libthread_db enabled]
+        Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+        Allocating 5MB for the input file.
+        [New Thread 0x7ffff576e700 (LWP 26772)]
+
+        Kernel elapsed time:            0.6ms
+        Final hash value: 529608312
+        [Thread 0x7ffff576e700 (LWP 26772) exited]
+        [Inferior 1 (process 26765) exited normally]
+        (cuda-gdb) 
+
+
