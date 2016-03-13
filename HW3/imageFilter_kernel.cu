@@ -1,50 +1,60 @@
 #ifndef _IMAGEFILTER_KERNEL_H_
 #define _IMAGEFILTER_KERNEL_H_
 
-__global__ void imageFilterKernelPartA(char3* inputPixels, char3* outputPixels, uint width, uint height /*, other arguments */)
+__global__ void imageFilterKernelPartA(char3* inputPixels, char3* outputPixels, uint width, uint height, int pixel_per_thread)
 {
-
-	//Sample code, that just copies input pixels to output pixels
-	for(int i = 0; i < width * height; i ++)
-	{
-		outputPixels[i].x = inputPixels[i].x;
-		outputPixels[i].y = inputPixels[i].y;
-		outputPixels[i].z = inputPixels[i].z;
+	int index = blockIdx.x * blockDim.x + threadIdx.x;
+	for(int idx = index * pixel_per_thread; idx <  (index+1) * pixel_per_thread; idx++){
+		int3 sum = {0, 0, 0};
+		int count = 0;
+	    
+		for(int i = -4; i <= 4; i++){
+			for(int j = -4; j <= 4; j++){
+				int target = idx + j * width + i;
+				if(target >= 0 && target < (width * height)){
+					sum.x += (int)inputPixels[target].x;
+					sum.y += (int)inputPixels[target].y;
+					sum.z += (int)inputPixels[target].z;
+					count++;
+				}
+			}
+	    }	
+		outputPixels[idx].x = sum.x/count;
+		outputPixels[idx].y = sum.y/count;
+		outputPixels[idx].z = sum.z/count;			
 	}
-	//Assign IDs to threads
-	//distribute work between threads
-	//do the computation and store the output pixels in outputPixels
-
 }
-__global__ void imageFilterKernelPartB(char3* inputPixels, char3* outputPixels, uint width, uint height /*, other arguments */)
+__global__ void imageFilterKernelPartB(char3* inputPixels, char3* outputPixels, uint width, uint height, int pixel_per_thread, int total_thread)
 {
-
-	//Sample code, that just copies input pixels to output pixels
-	for(int i = 0; i < width * height; i ++)
-	{
-		outputPixels[i].x = inputPixels[i].x;
-		outputPixels[i].y = inputPixels[i].y;
-		outputPixels[i].z = inputPixels[i].z;
+	int index = blockIdx.x * blockDim.x + threadIdx.x;
+	for(int idx = 0; idx < pixel_per_thread; idx++){
+		int currIdx = idx * total_thread + index;
+		int3 sum = {0, 0, 0};
+		int count = 0;
+		
+		for(int i = -4; i <= 4; i++){
+			for(int j = -4; j <= 4; j++){
+				int target = currIdx + j * width + i;
+				if(target >= 0 && target < (width * height)){
+					sum.x += (int)inputPixels[target].x;
+					sum.y += (int)inputPixels[target].y;
+					sum.z += (int)inputPixels[target].z;
+					count++;
+				}
+			}
+	    }
+		outputPixels[currIdx].x = sum.x/count;
+		outputPixels[currIdx].y = sum.y/count;
+		outputPixels[currIdx].z = sum.z/count;
 	}
-	//Assign IDs to threads
-	//distribute work between threads
-	//do the computation and store the output pixels in outputPixels
-
 }
+
 __global__ void imageFilterKernelPartC(char3* inputPixels, char3* outputPixels, uint width, uint height /*, other arguments */)
 {
-
-	//Sample code, that just copies input pixels to output pixels
-	for(int i = 0; i < width * height; i ++)
-	{
-		outputPixels[i].x = inputPixels[i].x;
-		outputPixels[i].y = inputPixels[i].y;
-		outputPixels[i].z = inputPixels[i].z;
-	}
-	//Assign IDs to threads
-	//distribute work between threads
-	//do the computation and store the output pixels in outputPixels
-
+	int tid = threadIdx.x;
+	int index = blockIdx.x * blockDim.x + threadIdx.x;
+	
 }
+
 
 #endif // _IMAGEFILTER_KERNEL_H_

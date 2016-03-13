@@ -95,8 +95,8 @@ int main(int argc, char *argv[])
 	char* p = &(fdata[*data_pos]);
 
 	//Set the number of blocks and threads
-	dim3 grid(1, 1, 1/*x, y, x*/);
-	dim3 block(1, 1, 1/*x, y, x*/);
+	dim3 grid(12, 1, 1);
+	dim3 block(1024, 1, 1);
 
 	char* d_inputPixels;
 	cudaMalloc((void**) &d_inputPixels, width * height * 3);
@@ -112,14 +112,16 @@ int main(int argc, char *argv[])
 	time_t diff;
 	gettimeofday(&start_tv, NULL);
 
-
+	int pixels_per_thread = ((width * height) % (grid.x * block.x) == 0)? (width * height) / (grid.x * block.x):(width * height) / (grid.x * block.x) + 1;
+	int total_thread = grid.x * block.x;
+	
 	if(partId == 'a')
 	{
-		imageFilterKernelPartA<<<grid, block>>>((char3*) d_inputPixels, (char3*) d_outputPixels, width, height /*, other arguments */);
+		imageFilterKernelPartA<<<grid, block>>>((char3*) d_inputPixels, (char3*) d_outputPixels, width, height , pixels_per_thread);
 	} 
 	else if(partId == 'b')
 	{
-		imageFilterKernelPartB<<<grid, block>>>((char3*) d_inputPixels, (char3*) d_outputPixels, width, height /*, other arguments */);
+		imageFilterKernelPartB<<<grid, block>>>((char3*) d_inputPixels, (char3*) d_outputPixels, width, height , pixels_per_thread, total_thread);
 	}
 	else if(partId == 'c')
 	{
