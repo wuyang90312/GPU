@@ -112,20 +112,36 @@ int main(int argc, char *argv[])
 	time_t diff;
 	gettimeofday(&start_tv, NULL);
 
-	int pixels_per_thread = ((width * height) % (grid.x * block.x) == 0)? (width * height) / (grid.x * block.x):(width * height) / (grid.x * block.x) + 1;
-	int total_thread = grid.x * block.x;
+    int num_thrd = grid.x * block.x;
+    int pxls_per_thrd = (width * height) / num_thrd;
+	if((width * height) % num_thrd != 0)
+        pxls_per_thrd += 1;
 	
+
+    /* Variables for Kernel C */
+	int blocks_r = (width - 8) / 120;
+	int blocks_c = (height - 8) / 120;
+	if((width - 8) % 120 != 0)
+		blocks_r += 1;
+
+	if((height - 8) % 120 != 0) 
+		blocks_c += 1;
+    
+    int nloops   = (blocks_r * blocks_c) / 12;
+    if((blocks_r * blocks_c) % 12 != 0)
+        nloops += 1;
+
 	if(partId == 'a')
 	{
-		imageFilterKernelPartA<<<grid, block>>>((char3*) d_inputPixels, (char3*) d_outputPixels, width, height , pixels_per_thread);
+		imageFilterKernelPartA<<<grid, block>>>((char3*) d_inputPixels, (char3*) d_outputPixels, width, height , pxls_per_thrd);
 	} 
 	else if(partId == 'b')
 	{
-		imageFilterKernelPartB<<<grid, block>>>((char3*) d_inputPixels, (char3*) d_outputPixels, width, height , pixels_per_thread, total_thread);
+		imageFilterKernelPartB<<<grid, block>>>((char3*) d_inputPixels, (char3*) d_outputPixels, width, height , pxls_per_thrd, num_thrd);
 	}
 	else if(partId == 'c')
 	{
-		imageFilterKernelPartC<<<grid, block>>>((char3*) d_inputPixels, (char3*) d_outputPixels, width, height /*, other arguments */);
+		imageFilterKernelPartC<<<grid, block>>>((char3*) d_inputPixels, (char3*) d_outputPixels, width, height, blocks_r, blocks_c, nloops);
 	}
 
 	cudaThreadSynchronize();
